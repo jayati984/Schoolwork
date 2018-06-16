@@ -1,0 +1,15 @@
+B-Trees
+1a) Insertion in the order SFEVDUJPOT
+
+1. EMPTY 2. S  3.  F,S  4.    F,S   5.    F,S     6.    F,S    7.      F,S         8.      F,S          9.       F,S       10.       F,S           11.          F,S
+                             /           /   \         /   \          /   \               / | \                 / | \               / | \                      / | \
+                            E           E     V     D,E     V      D,E     U,V         D,E  J  U,V           D,E J,P U,V         D,E J,P U,V                D,E J,P U,V
+                                                                                                                                      |                          | /
+                                                                                                                                      O                          OT
+1b) Deletion in the order SFEVDUJPOT
+
+1.     F,S          2.      F,T         3.      E,T          4.      D,T        5.      D,T         6.    T        7.   T      8.    T     9.    T      10.    T       11. EMPTY
+      / | \                / | \               / | \                  | \                | \             / \           /            /           /
+   D,E J,P U,P          D,E J,P U,V           D J,P U,V              J,P U,V            J,P U         J,P   U       J,P            P           O
+        | /                  |                   |                    |                  |             |             |            /
+        OT                   O                   O                    O                  O             O             O           O

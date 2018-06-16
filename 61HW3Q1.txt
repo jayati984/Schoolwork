@@ -1,0 +1,18 @@
+There are 5 different binary trees that can be made from 3 nodes. - This can be shown through recursion as follows:
+- there are a number of ways we can arrange the 3 nodes.
+- for example:
+                        RIGHT                               LEFT
+                          2                                   0
+                          1                                   1
+                          0                                   2
+                          
+- therefore, if we multiply the number of ways the nodes can be arranged on the left with the number of ways the nodes can be arranged on the right for each possible tree, and add them together, we can get the number of different binary trees possible.
+- therefore, for 3 nodes, 1*2+1*1+1*2 = 5
+- this is recursive as the same process of multiplying takes place for each tree.
+- therefore, using this method, for 4 nodes you get 14 different binary trees.
+                        RIGHT                               LEFT
+                          3                                   0
+                          2                                   1
+                          1                                   2
+                          0                                   3
+- therefore, for 4 nodes, 6*1+2*1+1*2+1*6 = 14

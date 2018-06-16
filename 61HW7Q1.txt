@@ -1,0 +1,3 @@
+Of the two videos, the first one is wrong.
+
+The mistake is that for the comparisons to find the index of the smallest integer, the swapping is occurring before the completion of one iteration through the whole array to find the index of the smallest integer. In selection sort, which is displayed by the second video, the items at each index of the array is compared with the integer set as the smallest, and then once the whole iteration is complete, and the index of the smallest integer is found, that is only when the swapping occurs.
