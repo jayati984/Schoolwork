@@ -1,0 +1,174 @@
+#include <iostream>
+#include <cstdlib>  // Provides size_t
+using namespace std;
+
+namespace main_savitch_12B
+{
+    template <class RecordType>
+    table<RecordType>::table( )
+    {
+        total_records = 0;
+
+        for (size_t i = 0; i < TABLE_SIZE; ++i)
+        {
+            data[i] = NULL; //set each pointer at each index to NULL
+        }
+    }
+
+    template <class RecordType>
+    table<RecordType>::table(const table& source)
+    {
+        main_savitch_6B::node<RecordType> *tail_ptr;
+        
+        for(size_t i = 0; i < TABLE_SIZE; ++i)
+        {
+            list_copy(source.data[i], data[i], tail_ptr); //copying items to new list from pointer data[i] to tail_ptr
+        }
+        
+        total_records = source.total_records;
+    }
+    
+    template <class RecordType>
+    table<RecordType>::~table()
+    {
+        for(size_t i = 0; i < TABLE_SIZE; ++i)
+        {
+            list_clear(data[i]); //deleting the linked list at each entry of the array
+        }
+    }
+    
+    template <class RecordType>
+    void table<RecordType>::insert(const RecordType& entry)
+    {
+        
+        if(is_present(entry.key) == false) //the key is not present in the table - no doubles
+        {
+            main_savitch_6B::node<RecordType> *temp = data[hash(entry.key)];
+            
+            if(temp == NULL) // if no entry already present at that index (no linked list yet) create new head node and temp points to it
+            {
+                temp = new main_savitch_6B::node<RecordType>(entry, temp);
+            }
+            else
+            {
+                main_savitch_6B::node<RecordType> *insert_ptr;
+                insert_ptr = new main_savitch_6B::node<RecordType>(entry, temp->link());
+                temp->set_link(insert_ptr);
+            }
+        
+            total_records++; //number of records increases
+        }
+    }
+
+    template <class RecordType>
+    void table<RecordType>::remove(int key)
+    {
+        main_savitch_6B::node<RecordType> *temp1 = data[hash(key)]; //temp1 points to the particular indexed element of the array that the key hashes to
+        main_savitch_6B::node<RecordType> *temp2 = NULL;
+        
+        bool found = false;
+        
+        while(temp1 != NULL) //if a linked list is present there and the key is present at that location, then remove the linked list 
+        {
+            if(temp1->data().key == key)
+            {
+                found = true; //to delete particular node
+                break;
+            }
+            temp2 = temp1;
+            temp1 = temp1->link();
+        }
+        
+        if(found == true)
+        {
+            list_remove(temp2); //remove the node after the node pointed to by temp2
+            total_records--; //decrement the total number of records
+        }
+    }
+    
+    template <class RecordType>
+    void table<RecordType>::operator =(const table& source)
+    {
+        main_savitch_6B::node<RecordType> *tail_ptr;
+        
+        if(this == &source)
+        {
+            return;
+        }
+        
+        for(size_t i = 0; i < TABLE_SIZE; ++i)
+        {
+            list_copy(source.data[i], data[i], tail_ptr);
+        }
+        
+        total_records = source.total_records;
+    }
+    
+    template <class RecordType>
+    void table<RecordType>::find(int key, bool& found, RecordType& result) const
+    {
+        main_savitch_6B::node<RecordType> *temp = data[hash(key)]; //temp points to the indexed element to where the key hashes to
+        
+        found = false;
+        
+        while(temp != NULL) //continue searching the linked list at that index until you find the key. Once found, set it to the record result
+        {
+            if(temp->data().key == key)
+            {
+                found = true;
+                result = temp->data(); //copy of key is assigned to result
+            }
+            else
+            {
+                temp = temp->link(); //continue searching through rest of linked list
+            }
+        }
+    }
+
+    template <class RecordType>
+    bool table<RecordType>::is_present(int key) const
+    {
+        main_savitch_6B::node<RecordType> *temp = data[hash(key)]; //temp points to the indexed element to where the key hashes to
+        
+        bool found = false;
+        
+        while(temp != NULL) //if not an empty linked list, check if the key is present. If present return true, or continue looking through the linked list or return false
+        {
+            if(temp->data().key == key)
+            {
+                found = true;
+            }
+            else
+            {
+                temp = temp->link();
+            }
+        }
+        
+        return found;
+    }
+
+    template <class RecordType>
+    std::size_t table<RecordType>::hash(int key) const
+    {
+        return (key % TABLE_SIZE);
+    }
+    
+    template <class RecordType>
+    void table<RecordType>::print()
+    {
+        for(int i = 0; i < total_records; i++)
+        {
+            main_savitch_6B::node<RecordType> *temp = data[i];
+            cout << " [ " << i << " ] ";
+            if(temp != NULL)
+            {
+                while(temp != NULL)
+                {
+                    cout << "[ " << data[i] << " ] ";
+                    temp = temp->link();
+                }
+                cout << endl;
+            }
+    }
+}
+

@@ -1,0 +1,400 @@
+#include <iomanip>
+#include <cstdlib>
+using namespace std;
+namespace main_savitch_11
+{
+template <class Item>
+set<Item>::set( )
+{
+    data_count = 0;
+    child_count = 0;
+}
+
+template <class Item>
+set<Item>::set(const set& source)
+{
+    data_count = source.data_count;
+    child_count = source.child_count;
+    for(size_t x = 0; x < data_count; x++)
+    {
+        data[x] = source.data[x];
+    }
+}
+
+template <class Item>
+void set<Item>::operator =(const set& source)
+{
+    data_count = source.data_count;
+    child_count = source.child_count;
+    for(size_t x = 0; x < data_count; x++)
+    {
+        data[x] = source.data[x];
+    }
+}
+
+template <class Item>
+void set<Item>::clear( )
+{
+    //delete[] data;
+}
+
+template <class Item>
+bool set<Item>::insert(const Item& entry)
+{
+    //adding entry
+    loose_insert(entry);
+    if(!(loose_insert(entry)))
+    {
+        return false; //did not add an entry
+    }
+    //check to see if MAXIMUM is violated
+    else if(data_count > MAXIMUM)
+    {
+        //creating new node where root's data is copied and original root is empty
+        set<Item> *child = new set<Item>();
+        //transfer data to new child
+        for(size_t x = 0; x < child_count; x++)
+        {
+            child->data[x] = data[x];
+        }
+        for(size_t y = 0; y < child_count; y++)
+        {
+            child->subset[y] = subset[y];
+        }
+        child->child_count = child_count;
+        child->data_count = data_count;
+        //current node is empty with one child, therefore:
+        data_count = 0;
+        child_count = 1;
+        //make new child of current node as subset[0]
+        subset[0] = child;
+        //fix violation of empty root node
+        fix_excess(0); // split the new child so that middle entry becomes the new root
+    }
+    return true; // added entry
+}
+
+template <class Item>
+std::size_t set<Item>::erase(const Item& target)
+{
+    if(!(loose_erase(target)))//target is not in tree
+    {
+        return false; //did not remove the target
+    }
+    if(data_count == 0 && child_count == 1)//root is now empty / violation of MINIMUM
+    {
+        //temporary pointer to only child
+        set<Item> *temp = subset[0];
+        //copying from child to root
+        for(size_t d = 0; d < temp->data_count; d++)
+        {
+            data[d] = temp->data[d];
+        }
+        for(size_t g = 0; g < temp->child_count; g++)
+        {
+            subset[g] = temp->subset[g];
+        }
+        //deleting original child
+        delete temp; // now height of tree is one level shorter
+    }
+    return true; //removed target
+}
+
+template <class Item>
+std::size_t set<Item>::count(const Item& target) const
+{
+    size_t i;
+    //i equal to the first index such that data[i] is not less than target
+    //else i becomes data_count
+    for(i = 0; i < data_count && data[i] < target; i++);
+    if((i < data_count) && !(target < data[i]))//found target
+    {
+        return 1;
+    }
+    else if(child_count == 0)//root has no children and target not in root
+    {
+        return 0;
+    }
+    else
+    {
+        return subset[i]->count(target);
+    }
+}
+
+template <class Item>
+void set<Item>::print(int indent) const
+{
+    const int EXTRA_INDENTATION = 4;
+    size_t i;
+    
+    std::cout << std::setw(indent) << ""; // Print the indentation
+    
+    //Print the data from the root
+    for(i = 0; i < data_count; ++i)
+    {
+        std::cout << data[i] << " ";
+    }
+    std::cout << std::endl;
+    //Print the subtrees
+    for(i = 0; i < child_count; ++i)
+    {
+        subset[i]->print(indent + EXTRA_INDENTATION);
+    }
+}
+
+template <class Item>
+bool set<Item>::loose_insert(const Item& entry)
+{
+    size_t i;
+    for(i = 0; i < data_count && data[i] < entry; i++);
+    if((i < data_count) && (data[i] == entry))//that entry already exists in tree
+    {
+        return false;
+    }
+    else if(child_count == 0)// root has no children, so need to add entry to current node
+    {
+        for(size_t j = data_count; j > i; j--)
+        {
+            data[j] = data[j-1];//shifting elements to include entry
+        }
+        data[i] = entry;
+        data_count++;
+        return true;
+    }
+    else//has children, therefore continue searching for correct position to insert node
+    {
+        subset[i]->loose_insert(entry);
+        if(!(subset[i]->data_count < MAXIMUM))//if node violates MAXIMUM, need to fix
+        {
+            fix_excess(i);
+        }
+        return true;
+    }
+}
+
+template <class Item>
+bool set<Item>::loose_erase(const Item& target)
+{
+    size_t i = 0;
+    //getting first index such that data[i] is not less than the target
+    while(i < data_count && data[i] < target)
+    {
+        i++;
+    }
+    //target not found and the node is a leaf node
+    if((target != data[i]) && (child_count != 0))
+    {
+        return false; //target is not in set
+    }
+    //if the target is found and it is a leaf node
+    if(!(target == data[i]) && (child_count != 0))
+    {
+        //shifting data to the left to remove target 
+        for(size_t j = i; j < data_count; j++)
+        {
+            data[j] = data[j + 1];
+        }
+        //decreasing count after removal
+        data_count--;
+        return true;
+    }
+    //target not found and has children
+    else if(!(target == data[i]) && (child_count == 0))
+    {
+        subset[i]->loose_erase(target);
+        if(subset[i]->data_count < MINIMUM)
+        {
+            fix_shortage(i);
+        }
+        return true;
+    }
+    //target not found and has children
+    else if(!(target == data[i]) && (child_count != 0))
+    {
+        subset[i]->remove_biggest(data[i]);
+        if(subset[i]->data_count < MINIMUM)
+        {
+            fix_shortage(i);
+        }
+        return true;
+    }
+}
+
+template <class Item>
+void set<Item>::remove_biggest(Item& removed_entry)
+{
+    if(is_leaf())
+    {
+        data_count--;
+        removed_entry = data[data_count];
+    }
+    else
+    {
+        subset[child_count - 1]->remove_biggest(removed_entry);
+        if(subset[child_count - 1]->data_count < MINIMUM)
+        {
+            fix_shortage(child_count - 1);
+        }
+    }
+}
+
+template <class Item>
+void set<Item>::fix_excess(std::size_t i)
+{
+    size_t e;
+    //copy middle entry to root
+    for(e = data_count; e > i; e--)
+    {
+        //making room for copy
+        data[e] = data[e-1];
+    }
+    //copying to root
+    data[i] = subset[i]->data[MINIMUM];
+    data_count++;
+    //splitting child node into two different subsets/trees
+    //using dynamic memory - using new operator - set objects
+    set<Item> *left = new set<Item>();
+    set<Item> *right = new set<Item>();
+    left->data_count = MINIMUM;
+    right->data_count = MINIMUM;
+    //copying data from original subset
+    for(e = 0; e < MINIMUM; e++)
+    {
+        left->data[e] = subset[i]->data[e];
+        right->data[e] = subset[i]->data[e + MINIMUM + 1];//plus one to skip middle entry and plus MINIMUM to skip what will go to the left
+    }
+    //copying subsets of child if they exist
+    if(!(subset[i]->is_leaf()))
+    {
+    size_t c = (subset[i]->child_count)/2;
+    for(e = 0; e < c; e++)
+    {
+        left->subset[e] = subset[i]->subset[e];
+        right->subset[e] = subset[i]->subset[e + c]; //right gets other half of children so need to add c to e
+    }
+    if(c > 0)
+    {
+        left->child_count = MINIMUM + 1;
+        right->child_count = MINIMUM + 1;
+    }
+    }
+    //shifting subsets to make room for new children of root
+    subset[child_count] = new set;
+    for(e = child_count; e > i; e--)
+    {
+        subset[e] = subset[e - 1];
+    }
+    child_count++;
+    //copying children to root's subset array
+    subset[i] = left;
+    subset[i + 1] = right;
+}
+
+template <class Item>
+void set<Item>::fix_shortage(std::size_t i)
+{
+    //transferring from subset[i - 1]
+    if(!(subset[i - 1]->data_count < MINIMUM) && subset[i]->is_leaf())
+    {
+        for(size_t j = data_count - 1; j > 0; j--)
+        {
+            subset[i]->data[j + 1] = subset[i]->data[j];
+        }
+        //transfer data[i-1] down to the front of subset[i]->data and shift over existing entries to make room, and add one to subset[i]->data_count
+        subset[i]->data[0] = data[i-1];
+        (subset[i]->data_count)++;
+        //transfer the final item of subset[i-1] up to replace data[i-1]
+        data[i - 1] = subset[i - 1]->data[(subset[i - 1]->data_count) - 1];
+        (subset[i - 1]->data_count)--;
+        //if subset[i-1] has children, transfer the final child of subset[i-1] over to the front of subset[i] and shift to make room for new child pointer
+        if(!(subset[i - 1]->is_leaf()))
+        {
+            for(size_t y = subset[i]->child_count - 1; y >= 0; y++)
+            {
+                subset[i]->subset[y + 1] = subset[i]->subset[y];
+            }
+            //transfer last child of subset[i-1] to first of subset[i]
+            subset[i]->subset[0] = subset[i - 1]->subset[(subset[i - 1]->child_count) - 1];
+            (subset[i]->child_count)++;
+            (subset[i - 1]->child_count)--;
+        }
+    }
+    //transfering from subset[i + 1]
+    else if(!(subset[i + 1]->data_count < MINIMUM))
+    {
+        (subset[i]->data_count)++;
+        subset[i]->data[subset[i]->data_count - 1] = data[i];
+        data[i] = subset[i + 1]->data[0];
+        for(size_t k = 0; k < subset[i + 1]->data_count - 1; k++)
+        {
+            subset[i + 1]->data[k] = subset[i + 1]->data[k + 1];
+        }
+        (subset[i + 1]->data_count)--;
+        if(!(subset[i + 1]->is_leaf()))
+        {
+            subset[i]->data[subset[i]->data_count] = subset[i + 1]->data[0];
+            (subset[i]->child_count)++;
+            (subset[i + 1]->child_count)--;
+        }
+    }
+    //combining subset[i] with subset[i - 1]
+    else if(subset[i - 1]->data_count == MINIMUM)
+    {
+        subset[i - 1]->data[subset[i - 1]->data_count] = data[i - 1];
+        for(size_t t = 1; t < data_count; t++)
+        {
+            data[t - 1] = data[t];
+        }
+        data_count--;
+        (subset[i - 1]->data_count)++;
+        //transferring all data items and children from subset[i] to end of subset[i-1]
+        for(size_t items = 0; items < subset[i]->data_count; items++)
+        {
+            subset[i - 1]->data[subset[i - 1]->data_count] = subset[i]->data[items];
+            (subset[i - 1]->data_count)++;
+        }
+        for(size_t children = 0; children < subset[i]->child_count; children++)
+        {
+            subset[i - 1]->subset[(subset[i - 1]->child_count) - 1] = subset[i]->subset[children];
+            (subset[i - 1]->child_count)++;
+        }
+        subset[i]->data_count = 0;
+        subset[i]->child_count = 0;
+        delete subset[i];
+        for(i = i; i < child_count - 1; i++)
+        {
+            subset[i] = subset[i + 1];
+        }
+        child_count--;
+    }
+    //combining susbet[i] with subset[i + 1]
+    else
+    {
+        subset[i]->data[subset[i]->data_count] = data[i + 1];
+        for(size_t t = 1; t < data_count; t++)
+        {
+            data[t - 1] = data[t];
+        }
+        data_count--;
+        (subset[i]->data_count)++;
+        //transferring all data items and children from subset[i + 1] to end of subset[i]
+        for(size_t items = 0; items < subset[i + 1]->data_count; items++)
+        {
+            subset[i]->data[subset[i]->data_count] = subset[i + 1]->data[items];
+            (subset[i]->data_count)++;
+        }
+        for(size_t children = 0; children < subset[i + 1]->child_count; children++)
+        {
+            subset[i]->subset[(subset[i]->child_count) - 1] = subset[i + 1]->subset[children];
+            (subset[i]->child_count)++;
+        }
+        subset[i + 1]->data_count = 0;
+        subset[i + 1]->child_count = 0;
+        delete subset[i + 1];
+        for(i = i; i < child_count - 1; i++)
+        {
+            subset[i + 1] = subset[i];
+        }
+        child_count--;
+    }
+}
